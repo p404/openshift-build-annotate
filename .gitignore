@@ -1,1 +1,4 @@
 openshift-build-annotate
+ssl/*.key
+ssl/*.pem
+ssl/*.csr
