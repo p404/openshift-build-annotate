@@ -10,8 +10,8 @@ env:
   REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
 
 jobs:
-  registry-login:
-    name: Log in to image registry
+  build-push:
+    name: Build and push image
     runs-on: ubuntu-20.04
     steps:
       - name: Log in to Quay.io
@@ -20,10 +20,6 @@ jobs:
           username: ${{ env.REGISTRY_USER }}
           password: ${{ env.REGISTRY_PASSWORD }}
           registry: ${{ env.IMAGE_REGISTRY }}
-  build-push:
-    name: Build and push image
-    runs-on: ubuntu-20.04
-    steps:
       - uses: actions/checkout@v2
       - name: Build Image
         id: build-image
