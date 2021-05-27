@@ -4,8 +4,8 @@ on:
    branches:
      - master
 env:
-  USER: p404
-  REGISTRY_USER: ${{ env.USER }}+github
+  REGISTRY_USER: p404+github
+  REGISTRY_REPO_USER: p404
   IMAGE_REGISTRY: quay.io
   IMAGE_NAME: openshift-build-annotate
   REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
@@ -35,6 +35,6 @@ jobs:
         with:
             image: ${{ steps.build-image.outputs.image }}
             tags: ${{ steps.build-image.outputs.tags }}
-            registry: ${{ env.IMAGE_REGISTRY }}/{{ env.USER }}
+            registry: ${{ env.IMAGE_REGISTRY }}/{{ env.REGISTRY_REPO_USER }}
       - name: Print image url
         run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
