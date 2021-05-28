@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openshift-build-annotate
+  labels:
+    app: openshift-build-annotate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openshift-build-annotate
+  template:
+    metadata:
+      name: openshift-build-annotate
+      labels:
+        app: openshift-build-annotate
+    spec:
+      containers:
+        - name: openshift-build-annotate
+          image: quay.io/p404/openshift-build-annotate:latest
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 250m
+              memory: 64Mi
+          volumeMounts:
+          - name: tls
+            mountPath: /opt/app-root/tls
+      volumes:
+        - name: tls
+          secret:
+            secretName: openshift-build-annotate-certs
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openshift-build-annotate
+  labels:
+    app: openshift-build-annotate
+spec:
+  publishNotReadyAddresses: true
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    app: openshift-build-annotate
