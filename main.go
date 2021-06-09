@@ -1,26 +1,26 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"html"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
-	"html"
-	"io/ioutil"
-	"encoding/json"
 
 	"github.com/Jeffail/gabs"
 	"github.com/google/go-containerregistry/pkg/crane"
 	v1beta1 "k8s.io/api/admission/v1beta1"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type OpenShiftLabels struct {
-	commitAuthor string
-	commitDate string
-	commitId string
+	commitAuthor  string
+	commitDate    string
+	commitId      string
 	commitMessage string
-	commitRef string
+	commitRef     string
 }
 
 // labelStrcut, _ := GetLabelsFromImage("quay.io/bitnami/mysql")
@@ -60,9 +60,29 @@ func Mutate(body []byte) ([]byte, error) {
 		return nil, fmt.Errorf("Unmarshaling request failed with %s", err)
 	}
 
+	var err error
+	responseBody := []byte{}
 	ar := admReview.Request
-	fmt.Println(ar)
-	return body, nil
+
+	resp := v1beta1.AdmissionResponse{}
+	resp.Allowed = true
+	resp.UID = ar.UID
+	resp.AuditAnnotations = map[string]string{
+		"mutateme": "yup",
+	}
+	resp.Result = &metav1.Status{
+		Status: "Success",
+	}
+
+	admReview.Response = &resp
+	responseBody, err = json.Marshal(admReview)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("resp: %s\n", string(responseBody))
+
+	return responseBody, nil
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
@@ -74,21 +94,21 @@ func handleMutate(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err != nil {
-			sendError(err, w)
-			return
+		sendError(err, w)
+		return
 	}
 
 	mutated, err := Mutate(body)
 	if err != nil {
-			sendError(err, w)
-			return
+		sendError(err, w)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(mutated)
 }
 
-func main(){
+func main() {
 	log.Println("Starting server openshift-build-annotate...")
 
 	mux := http.NewServeMux()
