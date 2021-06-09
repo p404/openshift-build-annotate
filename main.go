@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Jeffail/gabs"
-	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/crane"
 	v1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -67,10 +66,10 @@ func Mutate(body []byte) ([]byte, error) {
 	ar := admReview.Request
 
 	if err := json.Unmarshal(ar.Object.Raw, &pod); err != nil {
-		glog.Errorf("could not unmarshal raw object: %v", err)
+		log.Printf("could not unmarshal raw object: %v", err)
 	}
 
-	glog.Infof("AdmissionReview for Kind=%v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%v", ar.Kind, ar.Namespace, ar.Name, ar.Name, ar.UID, ar.Operation, ar.UserInfo)
+	log.Printf("AdmissionReview for Kind=%v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%v", ar.Kind, ar.Namespace, ar.Name, ar.Name, ar.UID, ar.Operation, ar.UserInfo)
 
 	resp := v1beta1.AdmissionResponse{}
 	resp.Allowed = true
