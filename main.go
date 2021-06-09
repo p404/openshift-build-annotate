@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"github.com/Jeffail/gabs"
+	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/crane"
 	v1beta1 "k8s.io/api/admission/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,11 +31,11 @@ func GetLabelsFromImage(image string) (*OpenShiftLabels, error) {
 
 	res, err := crane.Config(image)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get defaults about image %s: %w", image, err)
+		return nil, fmt.Errorf("could not get defaults about image %s: %w", image, err)
 	}
 	data, err := gabs.ParseJSON(res)
 	if err != nil {
-		return nil, fmt.Errorf("Could not parse response from registry for image %s: %w", image, err)
+		return nil, fmt.Errorf("could not parse response from registry for image %s: %w", image, err)
 	}
 
 	if data.Exists("config", "Labels") {
@@ -41,7 +43,7 @@ func GetLabelsFromImage(image string) (*OpenShiftLabels, error) {
 			ocl.commitAuthor = data.Path("config.Labels.maintainer").Data().(string)
 		}
 	} else {
-		return nil, fmt.Errorf("Could not get labels from manifest image registry %s: %w", image, err)
+		return nil, fmt.Errorf("could not get labels from manifest image registry %s: %w", image, err)
 	}
 
 	return ocl, nil
@@ -54,22 +56,26 @@ func sendError(err error, w http.ResponseWriter) {
 }
 
 func Mutate(body []byte) ([]byte, error) {
-	admReview := v1beta1.AdmissionReview{}
-
-	if err := json.Unmarshal(body, &admReview); err != nil {
-		return nil, fmt.Errorf("Unmarshaling request failed with %s", err)
-	}
-
+	var pod corev1.Pod
 	var err error
 	responseBody := []byte{}
+
+	admReview := v1beta1.AdmissionReview{}
+	if err := json.Unmarshal(body, &admReview); err != nil {
+		return nil, fmt.Errorf("unmarshaling request failed with %s", err)
+	}
 	ar := admReview.Request
+
+	if err := json.Unmarshal(ar.Object.Raw, &pod); err != nil {
+		glog.Errorf("could not unmarshal raw object: %v", err)
+	}
+
+	glog.Infof("AdmissionReview for Kind=%v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%v", ar.Kind, ar.Namespace, ar.Name, ar.Name, ar.UID, ar.Operation, ar.UserInfo)
 
 	resp := v1beta1.AdmissionResponse{}
 	resp.Allowed = true
 	resp.UID = ar.UID
-	resp.AuditAnnotations = map[string]string{
-		"mutateme": "yup",
-	}
+
 	resp.Result = &metav1.Status{
 		Status: "Success",
 	}
@@ -79,8 +85,6 @@ func Mutate(body []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("resp: %s\n", string(responseBody))
 
 	return responseBody, nil
 }
