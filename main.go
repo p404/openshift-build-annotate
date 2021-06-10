@@ -143,6 +143,7 @@ func Mutate(body []byte) ([]byte, error) {
 	}
 
 	admReview.Response = MutateResponse(&admReview)
+	admReview.Response.UID = admReview.Request.UID
 	responseBody, err = json.Marshal(admReview)
 	if err != nil {
 		return nil, err
