@@ -215,7 +215,7 @@ func handleMutate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Print(mutated)
+	fmt.Print(string(mutated))
 	w.Write(mutated)
 }
 
